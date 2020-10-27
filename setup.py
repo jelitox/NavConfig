@@ -28,7 +28,10 @@ setup(
         'asyncio==3.4.3',
         'python-dotenv==0.14.0',
         'PyDrive==1.3.1',
-        'asyncdb==1.0.0'
+        'asyncdb==1.0.0',
+        'yapf==0.30.0',
+        'isort==5.6.4',
+        'black==20.8b1'
     ],
     project_urls={  # Optional
         'Source': 'https://github.com/phenobarbital/NavConfig',
