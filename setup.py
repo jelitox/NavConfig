@@ -24,14 +24,11 @@ setup(
     author_email='jlara@trocglobal.com',
     packages=find_packages(),
     install_requires=[
-        'numpy >= 1.11.1',
+        'numpy >= 1.16.2',
         'asyncio==3.4.3',
         'python-dotenv==0.14.0',
         'PyDrive==1.3.1',
-        'asyncdb'
-    ],
-    dependency_links=[
-        'git+https://github.com/phenobarbital/asyncdb.git#egg=asyncdb'
+        'asyncdb==1.0.0'
     ],
     project_urls={  # Optional
         'Source': 'https://github.com/phenobarbital/NavConfig',
