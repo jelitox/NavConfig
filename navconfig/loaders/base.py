@@ -1,10 +1,13 @@
-from abc import ABC, abstractmethod
+from abc import (
+    ABC,
+    abstractmethod,
+)
 from io import StringIO
+
 from dotenv import dotenv_values
 
 
 class BaseLoader(ABC):
-
     @abstractmethod
     def load_enviroment(self):
         pass

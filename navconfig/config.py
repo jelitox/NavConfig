@@ -1,13 +1,20 @@
-import os
 import importlib
+import logging
+import os
 import sys
 import types
-import logging
-from configparser import RawConfigParser, ConfigParser
+from configparser import (
+    ConfigParser,
+    RawConfigParser,
+)
 from pathlib import Path
-from dotenv import load_dotenv, dotenv_values
+
 from asyncdb.providers.mcache import mcache
 from asyncdb.providers.mredis import mredis
+from dotenv import (
+    dotenv_values,
+    load_dotenv,
+)
 
 
 #### TODO: Feature Toggles
@@ -16,28 +23,32 @@ class Singleton(type):
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+            cls._instances[cls] = super(Singleton,
+                                        cls).__call__(*args, **kwargs)
         return cls._instances[cls]
 
     def __new__(cls, *args, **kwargs):
         if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__new__(cls, *args, **kwargs)
-            setattr(cls, '__initialized', True)
+            cls._instances[cls] = super(Singleton,
+                                        cls).__new__(cls, *args, **kwargs)
+            setattr(cls, "__initialized", True)
         return cls._instances[cls]
+
 
 class navigatorConfig(metaclass=Singleton):
     """
     navigatorConfig.
         Class for Navigator configuration
     """
+
     _self = None
     _ini = None
     _mem = None
     _redis = None
-    ENV = ''
-    _path = '/etc/troc/'
-    _conffile = 'navigator.ini'
-    _site_path = ''
+    ENV = ""
+    _path = "/etc/troc/"
+    _conffile = "navigator.ini"
+    _site_path = ""
     _debug = False
     __initialized = False
 
@@ -46,41 +57,42 @@ class navigatorConfig(metaclass=Singleton):
             self._mem.close()
 
     def __init__(self, site_root=None):
-        if(self.__initialized): return
+        if self.__initialized:
+            return
         self.__initialized = True
         # this only load at first time
         if not site_root:
             site_root = Path(__file__).resolve().parent.parent
         self._site_path = site_root
         # get the current environment
-        environment = os.getenv('ENV', '')
+        environment = os.getenv("ENV", "")
         self.ENV = environment
         # getting type of enviroment consummer:
-        env_type = os.getenv('NAVCONFIG_ENV', 'file') # file by default
+        env_type = os.getenv("NAVCONFIG_ENV", "file")  # file by default
         # get the environment
         self.load_enviroment(env_type)
         # and get the config file declared in the environment file
-        config_file = os.getenv('CONFIG_FILE', '/etc/troc/navigator.ini')
+        config_file = os.getenv("CONFIG_FILE", "/etc/troc/navigator.ini")
         self._ini = ConfigParser()
-        #self._ini = RawConfigParser()
+        # self._ini = RawConfigParser()
         cf = Path(config_file).resolve()
         if not cf.exists():
-            cf = site_root.joinpath('etc', self._conffile)
+            cf = site_root.joinpath("etc", self._conffile)
         try:
-            #with open(cf) as f:
+            # with open(cf) as f:
             self._ini.read(cf)
         except IOError:
             print(cf, "INI file does not exist!")
             raise IOError("INI file does not exist!")
             return None
         # define debug
-        self._debug = os.getenv('DEBUG', False)
+        self._debug = os.getenv("DEBUG", False)
         # get redis connection
         try:
             redis = {
-                "host": os.getenv('CACHEHOST', 'localhost'),
-                "port": os.getenv('CACHEPORT', 6379),
-                "db": os.getenv('QUERYSET_DB', 0),
+                "host": os.getenv("CACHEHOST", "localhost"),
+                "port": os.getenv("CACHEPORT", 6379),
+                "db": os.getenv("QUERYSET_DB", 0),
             }
             self._redis = mredis(params=redis)
             self._redis.connection()
@@ -91,32 +103,35 @@ class navigatorConfig(metaclass=Singleton):
         # get memcache SERVER
         try:
             mem_params = {
-                "host": os.getenv('MEMCACHE_HOST', 'localhost'),
-                "port": os.getenv('MEMCACHE_PORT', 11211)
+                "host": os.getenv("MEMCACHE_HOST", "localhost"),
+                "port": os.getenv("MEMCACHE_PORT", 11211),
             }
             self._mem = mcache(params=mem_params)
             self._mem.connection()
             if self._debug:
-                print("Memcache Connected: {}".format(self._mem.is_connected()))
+                print(
+                    "Memcache Connected: {}".format(self._mem.is_connected())
+                )
         except Exception as err:
             print(err)
             # memcache not working
             self._mem = None
 
-    def load_enviroment(self, env_type: str = 'file'):
-        if env_type == 'file':
-            env_path = self.site_root.joinpath('env', self.ENV, '.env')
+    def load_enviroment(self, env_type: str = "file"):
+        if env_type == "file":
+            env_path = self.site_root.joinpath("env", self.ENV, ".env")
             # load dotenv
             load_dotenv(dotenv_path=env_path)
         else:
             # pluggable types
-            if env_type == 'drive':
+            if env_type == "drive":
                 from navconfig.loaders import driveLoader
+
                 try:
                     d = driveLoader()
                     d.load_enviroment()
                 except Exception as err:
-                    print('Error Reading from Google Drive', err)
+                    print("Error Reading from Google Drive", err)
 
     @property
     def site_root(self):
@@ -147,7 +162,8 @@ class navigatorConfig(metaclass=Singleton):
         if value in os.environ:
             val = os.getenv(value, fallback)
             if val:
-                if val.lower() in self._ini.BOOLEAN_STATES: # Check inf val is Boolean
+                if val.lower(
+                ) in self._ini.BOOLEAN_STATES:  # Check inf val is Boolean
                     return self._ini.BOOLEAN_STATES[val.lower()]
                 else:
                     return bool(val)
@@ -165,7 +181,7 @@ class navigatorConfig(metaclass=Singleton):
 
         # If not val and not section, get from MEMCACHED
         if not val and section == None:
-             #TODO: change to a non-async MEMCACHED connector
+            # TODO: change to a non-async MEMCACHED connector
             val = self._mem.get(value)
 
         # last: check if value exists on ini
@@ -173,7 +189,9 @@ class navigatorConfig(metaclass=Singleton):
             try:
                 val = self._ini.get(section, value)
                 if val:
-                    if val.lower() in self._ini.BOOLEAN_STATES: # Check inf val is Boolean
+                    if (
+                        val.lower() in self._ini.BOOLEAN_STATES
+                    ):  # Check inf val is Boolean
                         return self._ini.BOOLEAN_STATES[val.lower()]
             except Exception:
                 continue
@@ -214,7 +232,7 @@ class navigatorConfig(metaclass=Singleton):
             try:
                 val = self._ini.get(section, value)
                 if val:
-                    if val.isdigit(): # Check if val is Integer
+                    if val.isdigit():  # Check if val is Integer
                         return int(val)
             except Exception:
                 continue
@@ -310,7 +328,9 @@ class navigatorConfig(metaclass=Singleton):
         else:
             # if hasattr(self, key):
             #     return super(navigatorConfig, self).__getattr__(key)
-            raise TypeError("NavigatorConfig Error: has not attribute {}".format(key))
+            raise TypeError(
+                "NavigatorConfig Error: has not attribute {}".format(key)
+            )
         return None
 
     def set(self, key, value):
