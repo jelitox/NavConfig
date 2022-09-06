@@ -51,7 +51,7 @@ setup(
         'asyncio==3.4.3',
         'uvloop==0.16.0',
         'python-dotenv==0.20.0',
-        'configparser==5.2.0',
+        'configparser==5.3.0',
         'PyYAML>=6.0',
         'PyDrive==1.3.1',
         'pylibmc==1.6.1',
